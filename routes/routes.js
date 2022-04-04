@@ -4,6 +4,9 @@ const schema=require('../Schemas/joischema') ;
 const bcrypt=require('bcrypt') ;
 const connection=require('../connection') ;
 const jwt=require('jsonwebtoken')  ;
+const transport=require('../nodemailer') ;
+
+require("dotenv").config() ;
 
 
 module.exports=[
@@ -100,7 +103,101 @@ module.exports=[
        
              
         
-    } }
+    } } ,
+    
+    { method:'POST' , path:'/forget' , handler:(request,h)=>{
+
+
+         var email=request.payload.email ;
+
+            var token=jwt.sign({email:email},process.env.secret_key_forget ,{expiresIn:'1d'}) ;
+        
+
+
+       
+          var text=request.payload.text ;
+        var mailOptions = {
+            from: 'kxip2671@gmail.com',
+            to: email,
+            subject: 'Sending Email for password reset using Node.js',
+            text: token  ,
+            html:'<a href=" http://localhost:3000/reset"> click on this link to change the password </a>'
+          };
+          
+          transport.sendMail(mailOptions, function(error, info){
+            if (error) {
+              console.log(error);
+            } else {
+              console.log('Email sent: ' + info.response);
+            }
+          });
+        
+
+        return "email sent sucessfullyyy!!!!"
+
+
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+    }  ,{
+
+
+  method:'PUT' , path:'/reset' ,handler:async(request,h)=>{
+
+
+        console.log(request.params.email)  ;
+          
+
+        const salt=await bcrypt.genSalt(10) ;
+        const hashedPassword=await bcrypt.hash(request.payload.password,salt) ;
+
+
+
+
+
+           let sql='update USERINPUT set password ='+connection.escape(hashedPassword)+'where email ='+connection.escape(request.payload.email) ;
+           console.log(sql) ;
+           await connection.promise().query(sql) ;
+
+
+            
+
+            return "password reset sucessfulyyy!!!"  ;
+
+
+
+
+
+
+
+
+
+
+
+
+
+  }
+
+
+
+
+
+
+
+
+
+
+    }
 
 
 
